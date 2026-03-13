@@ -1,0 +1,68 @@
+# HuskSync Plugin Konfiguration – Spieler-Datensynchronisation via Redis
+# Synchronisiert Inventar, Position, XP, Health, etc. zwischen allen Servern
+# Plugin-Seite: https://william278.net/project/husksync/
+#
+# Platziere husksync-X.X.X.jar in minecraft/server-a/plugins/ und minecraft/server-b/plugins/
+
+husksync:
+  # Datenbank-Backend für die Synchronisation
+  database:
+    # Typ: REDIS (für Echtzeit-Sync zwischen Servern)
+    type: REDIS
+    redis:
+      host: "172.20.0.20"
+      port: 6379
+      password: ""
+      use_ssl: false
+      # Präfix für alle Redis-Keys dieses Netzwerks
+      key_prefix: "husksync:"
+
+  # Welche Spielerdaten synchronisiert werden sollen
+  sync:
+    # Inventar (Haupt-Inventar + Rüstung + Off-Hand)
+    inventories: true
+    # Enderchest
+    ender_chests: true
+    # Erfahrungspunkte und Level
+    experience: true
+    # Gesundheit (HP)
+    health: true
+    # Hunger und Sättigung
+    hunger: true
+    # Spielmodus (Survival, Creative, etc.)
+    game_mode: true
+    # Effekte (Tränke, Beacons, etc.)
+    effects: true
+    # Statistiken
+    statistics: true
+    # Persistente Daten (NBT)
+    persistent_data_container: true
+    # Maximale Gesundheit
+    max_health: true
+    # Flug-Status
+    fly_speed: true
+    # Gelockte Slots
+    locked_maps: true
+    # Spieler-Fortschritt (Advancements)
+    advancements: true
+    # Position wird NICHT über HuskSync synchronisiert (dafür ist der Proxy zuständig)
+    location: false
+
+  # Synchronisations-Modus
+  # "DELAY" wartet kurz bevor die Daten gelesen werden (sicherer)
+  # "LOCKSTEP" wartet auf Bestätigung (sicherer, aber langsamer)
+  sync_method: "LOCKSTEP"
+
+  # Verzögerung (Ticks) bei DELAY-Modus, bevor Spielerdaten gelesen werden
+  sync_delay: 5
+
+  # Datenspeicherung
+  save_on_world_save: true
+  save_on_death: true
+  save_on_disconnect: true
+
+  # Cluster-Name: Alle Server mit demselben Namen teilen die Daten
+  cluster_id: "failover-cluster"
+
+  # Logging-Level (INFO, WARN, ERROR)
+  log_level: "INFO"

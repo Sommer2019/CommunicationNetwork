@@ -1,0 +1,68 @@
+# Velocity Proxy Konfiguration – Seamless Failover Setup
+# Dokumentation: https://docs.papermc.io/velocity/configuration
+
+# Der Proxy-Titel erscheint im Minecraft-Multiplayer-Menü
+motd = "<gradient:green:blue>CommunicationNetwork</gradient> <gray>| Seamless Failover aktiv"
+
+# Maximale Anzahl gleichzeitiger Spieler
+show-max-players = 500
+
+# IP-Bind (0.0.0.0 = alle Interfaces)
+bind = "0.0.0.0:25577"
+
+# Online-Mode: true = Mojang-Authentifizierung über Velocity
+# Bei false müssen die Backend-Server auch offline-mode sein
+online-mode = true
+
+# Spieler-Infos werden über das Modern-Forwarding-Protokoll sicher weitergegeben
+player-info-forwarding-mode = "modern"
+
+# Verhindert, dass Velocity eine Verbindung ablehnt, wenn Backend nicht erreichbar
+# und ermöglicht stattdessen den Reconnect-Handler einzusetzen
+kick-existing-players = false
+
+# ─────────────────────────────────────────────
+# Backend-Server
+# Beide Server laufen dauerhaft (Hot Standby).
+# ─────────────────────────────────────────────
+[servers]
+server-a = "172.20.0.10:25501"
+server-b = "172.20.0.11:25502"
+
+# Try-Reihenfolge: Zuerst Server-A, bei Fehler automatisch Server-B.
+# Das ist der Kern des Failover-Mechanismus.
+try = ["server-a", "server-b"]
+
+# ─────────────────────────────────────────────
+# Forced Hosts (optional: spieler landen immer auf demselben Server)
+# ─────────────────────────────────────────────
+[forced-hosts]
+# "mc.example.com" = ["server-a"]
+
+# ─────────────────────────────────────────────
+# Erweiterte Einstellungen
+# ─────────────────────────────────────────────
+[advanced]
+# Kompression ab dieser Paketgröße (Bytes). Standard: 256
+compression-threshold = 256
+
+# Kompressions-Level (0 = keine, 9 = maximale Kompression, -1 = Standardwert der JVM/Deflate-Bibliothek)
+compression-level = -1
+
+# Login-Ratelimit (ms zwischen zwei Login-Versuchen von derselben IP)
+login-ratelimit = 3000
+
+# Verbindungs-Timeout zum Backend (ms)
+connection-timeout = 5000
+
+# Lese-Timeout zum Backend (ms)
+read-timeout = 30000
+
+# Haproxy/HAproxy-Proxy-Protocol (false = kein Forwarding nötig da internes Netz)
+proxy-protocol = false
+
+[query]
+enabled = false
+port = 25577
+map = "CommunicationNetwork"
+show-plugins = false
