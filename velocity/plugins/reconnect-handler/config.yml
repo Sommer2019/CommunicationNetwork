@@ -1,0 +1,33 @@
+# ReconnectHandler Plugin Konfiguration für Velocity
+# Dieses Plugin verhindert, dass Spieler gekickt werden, wenn ein Backend-Server ausfällt.
+# Stattdessen werden sie transparent auf den Ersatz-Server umgeleitet.
+#
+# Plugin: VelocityReconnectHandler (oder äquivalentes Reconnect-Plugin)
+# Platziere die .jar-Datei des Plugins im Verzeichnis velocity/plugins/
+
+reconnect-handler:
+  # Verzögerung (ms) bevor ein Reconnect-Versuch gestartet wird
+  reconnect-delay: 500
+
+  # Maximale Anzahl an Reconnect-Versuchen bevor der Spieler gekickt wird
+  max-retries: 10
+
+  # Intervall (ms) zwischen Reconnect-Versuchen
+  retry-interval: 1000
+
+  # Nachricht, die dem Spieler während des Reconnects angezeigt wird
+  connecting-message: "<yellow>Verbindung wird wiederhergestellt...</yellow>"
+
+  # Nachricht bei erfolgreichem Reconnect
+  connected-message: "<green>Verbindung erfolgreich wiederhergestellt!</green>"
+
+  # Nachricht, wenn alle Versuche fehlgeschlagen sind
+  failed-message: "<red>Verbindung fehlgeschlagen. Bitte versuche es erneut.</red>"
+
+  # Reihenfolge der Fallback-Server
+  fallback-servers:
+    - "server-b"
+    - "server-a"
+
+  # Spieler sollen nur zu Servern umgeleitet werden, die online sind
+  check-server-online: true

@@ -1,0 +1,190 @@
+version: "3.9"
+
+# Seamless Failover – Minecraft Network
+# Architektur: HAProxy → Velocity → [Server-A (aktiv) | Server-B (standby)] → Redis & Shared Storage
+#
+# Starten: docker compose up -d
+# Stoppen: docker compose down
+
+networks:
+  mcnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+volumes:
+  redis_data:
+  world_data:        # Shared world storage (beide Server mounten dasselbe Volume)
+  server_a_plugins:
+  server_b_plugins:
+
+services:
+
+  # ─────────────────────────────────────────────
+  # 1. HAProxy – Load Balancer / Floating Entry Point
+  #    Leitet eingehende Verbindungen (Port 25565) an den Velocity-Proxy weiter.
+  #    Bei mehreren Velocity-Instanzen übernimmt dieser die Lastverteilung.
+  # ─────────────────────────────────────────────
+  haproxy:
+    image: haproxy:2.9-alpine
+    container_name: mc_haproxy
+    restart: unless-stopped
+    ports:
+      - "25565:25565"   # Öffentlicher Minecraft-Port
+      - "8404:8404"     # HAProxy Stats-Dashboard
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      mcnet:
+        ipv4_address: 172.20.0.2
+    depends_on:
+      - velocity
+
+  # ─────────────────────────────────────────────
+  # 2. Velocity – Minecraft Proxy
+  #    Hält die Spieler-Session aktiv, auch wenn ein Backend-Server wechselt.
+  #    Konfiguriert mit ReconnectHandler-Plugin.
+  # ─────────────────────────────────────────────
+  velocity:
+    image: itzg/bungeecord:latest
+    container_name: mc_velocity
+    restart: unless-stopped
+    environment:
+      TYPE: VELOCITY
+      VELOCITY_VERSION: "3.3.0"
+      MEMORY: "512M"
+      ENABLE_RCON: "false"
+    ports:
+      - "25577:25577"   # Interner Velocity-Port (nur intern erreichbar)
+    volumes:
+      - ./velocity/velocity.toml:/server/velocity.toml:ro
+      - ./velocity/forwarding.secret:/server/forwarding.secret:ro
+      - ./velocity/plugins:/server/plugins
+    networks:
+      mcnet:
+        ipv4_address: 172.20.0.3
+    depends_on:
+      - server-a
+      - server-b
+      - redis
+
+  # ─────────────────────────────────────────────
+  # 3a. Server-A – Aktiver Minecraft-Server
+  # ─────────────────────────────────────────────
+  server-a:
+    image: itzg/minecraft-server:latest
+    container_name: mc_server_a
+    restart: unless-stopped
+    environment:
+      EULA: "TRUE"
+      TYPE: PAPER
+      VERSION: "1.21.1"
+      MEMORY: "2G"
+      SERVER_NAME: "Server-A"
+      SERVER_PORT: "25501"
+      ONLINE_MODE: "false"   # Velocity übernimmt die Authentifizierung (Modern Forwarding)
+      ENABLE_RCON: "true"
+      RCON_PASSWORD: "${RCON_PASSWORD:-changeme}"
+      RCON_PORT: "25575"
+    volumes:
+      - world_data:/data/world           # Shared World Storage
+      - server_a_plugins:/data/plugins
+      - ./minecraft/server-a/plugins:/data/plugins/custom:ro
+    networks:
+      mcnet:
+        ipv4_address: 172.20.0.10
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "mc-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ─────────────────────────────────────────────
+  # 3b. Server-B – Hot-Standby Minecraft-Server
+  #    Läuft dauerhaft und ist sofort verfügbar, wenn Server-A ausfällt.
+  # ─────────────────────────────────────────────
+  server-b:
+    image: itzg/minecraft-server:latest
+    container_name: mc_server_b
+    restart: unless-stopped
+    environment:
+      EULA: "TRUE"
+      TYPE: PAPER
+      VERSION: "1.21.1"
+      MEMORY: "2G"
+      SERVER_NAME: "Server-B"
+      SERVER_PORT: "25502"
+      ONLINE_MODE: "false"
+      ENABLE_RCON: "true"
+      RCON_PASSWORD: "${RCON_PASSWORD:-changeme}"
+      RCON_PORT: "25576"
+    volumes:
+      - world_data:/data/world           # Dieselbe Welt wie Server-A (Shared Storage)
+      - server_b_plugins:/data/plugins
+      - ./minecraft/server-b/plugins:/data/plugins/custom:ro
+    networks:
+      mcnet:
+        ipv4_address: 172.20.0.11
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "mc-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  # ─────────────────────────────────────────────
+  # 4. Redis – In-Memory State Store
+  #    Speichert Spieler-Inventare, Positionen und XP in Echtzeit,
+  #    damit der Ersatz-Server den letzten Stand kennt.
+  # ─────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: mc_redis
+    restart: unless-stopped
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis_data:/data
+    networks:
+      mcnet:
+        ipv4_address: 172.20.0.20
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # 5. Failover-Watchdog – Health Monitor
+  #    Überwacht Server-A und löst bei Ausfall den Failover aus:
+  #    Setzt den aktiven Server in Velocity um und benachrichtigt Administratoren.
+  # ─────────────────────────────────────────────
+  failover-watchdog:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.watchdog
+    container_name: mc_failover_watchdog
+    restart: unless-stopped
+    environment:
+      PRIMARY_HOST: "172.20.0.10"
+      PRIMARY_PORT: "25501"
+      STANDBY_HOST: "172.20.0.11"
+      STANDBY_PORT: "25502"
+      VELOCITY_HOST: "172.20.0.3"
+      REDIS_HOST: "172.20.0.20"
+      RCON_PASSWORD: "${RCON_PASSWORD:-changeme}"
+      CHECK_INTERVAL_SECONDS: "5"
+      FAILURE_THRESHOLD: "3"
+    networks:
+      mcnet:
+        ipv4_address: 172.20.0.30
+    depends_on:
+      - redis
+      - server-a
+      - server-b
