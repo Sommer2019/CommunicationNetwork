@@ -1,0 +1,19 @@
+# =============================================================================
+# /etc/fstab additions for GlusterFS world volume
+# =============================================================================
+# Add these lines to /etc/fstab on BOTH Node A and Node B.
+# The keepalived scripts (on_master.sh / on_backup.sh) handle the
+# read-write ↔ read-only remounting at runtime.
+#
+# Replace 192.168.1.101 / 192.168.1.102 with your actual Node IPs.
+# =============================================================================
+
+# ── Node A (fstab entry) ────────────────────────────────────────────────────
+# Mounted read-write when this node is MASTER; remounted read-only when BACKUP.
+# The keepalived scripts handle the remount – the fstab entry itself uses
+# "defaults" so the initial mount succeeds regardless of current role.
+localhost:/worlds  /mnt/minecraft/worlds  glusterfs  defaults,_netdev,log-level=WARNING,log-file=/var/log/gluster-client.log  0 0
+
+# ── Node B (fstab entry – same line, both nodes use localhost brick) ─────────
+# Same entry; the on_master / on_backup scripts remount as needed.
+localhost:/worlds  /mnt/minecraft/worlds  glusterfs  defaults,_netdev,log-level=WARNING,log-file=/var/log/gluster-client.log  0 0

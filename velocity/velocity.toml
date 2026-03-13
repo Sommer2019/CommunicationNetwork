@@ -1,0 +1,91 @@
+# =============================================================================
+# Velocity Proxy – velocity.toml
+# =============================================================================
+# Version:  Velocity 3.x (Paper-native forwarding)
+# Purpose:  Acts as the single entry-point for all players (via the VIP).
+#           Configured for seamless failover: if a backend goes down, the
+#           proxy moves the player to a fallback server instead of
+#           disconnecting them.
+#
+# Place at: /opt/velocity/velocity.toml
+# =============================================================================
+
+# The address the proxy listens on.  Players connect here via the VIP.
+bind = "0.0.0.0:25565"
+
+# The MOTD shown in the server list (MiniMessage format)
+motd = "<gradient:green:aqua>HA Minecraft Network</gradient> <gray>| Always Online"
+
+# Maximum simultaneous connections
+show-max-players = 500
+
+# Forward the player's real IP to backend servers
+player-info-forwarding-mode = "modern"   # requires Paper's paper-velocity-secret
+
+# Enable online-mode (Mojang auth) on the proxy; backends run in offline mode
+online-mode = true
+
+# Compression threshold in bytes (0 = always compress, -1 = disable)
+compression-threshold = 256
+compression-level = -1   # default zlib level
+
+# Login rate-limiting (attempts per second)
+login-ratelimit = 0      # 0 = no limit; tune for production
+
+# Connection timeout in milliseconds
+connection-timeout = 5000   # 5 seconds
+
+# Read timeout
+read-timeout = 30000
+
+# -----------------------------------------------------------------------------
+# Servers
+# Both nodes run identical backend servers.  Under normal operation Node A's
+# backends are used.  When Node A fails the VIP moves to Node B, which runs
+# its own identical backends on the same localhost ports.
+# -----------------------------------------------------------------------------
+[servers]
+# Node A backends (used when this proxy instance runs on Node A)
+survival  = "127.0.0.1:25570"
+lobby     = "127.0.0.1:25571"
+creative  = "127.0.0.1:25572"
+
+# Fallback order: players who get kicked from "survival" are sent to "lobby"
+# instead of being disconnected.
+try = ["lobby", "survival"]
+
+# -----------------------------------------------------------------------------
+# Forced Hosts  (optional: send mc.example.com players straight to survival)
+# -----------------------------------------------------------------------------
+[forced-hosts]
+"mc.example.com" = ["survival"]
+"lobby.example.com" = ["lobby"]
+
+# -----------------------------------------------------------------------------
+# Advanced
+# -----------------------------------------------------------------------------
+[advanced]
+# HAProxy PROXY Protocol support (leave false unless using HAProxy in front)
+proxy-protocol = false
+
+# How long (ms) to wait for a backend server to respond during login
+connection-timeout = 5000
+
+# Compress packets larger than N bytes (tune for your network)
+compression-threshold = 256
+
+# Show how many players are on each sub-server in the player-list tab
+# (requires TabList plugin or Velocity API usage)
+show-ping-as-zero-to-clients = false
+
+# Log connection events to stdout
+log-player-connections = true
+
+# -----------------------------------------------------------------------------
+# Query (GameSpy4 / UDP – useful for monitoring)
+# -----------------------------------------------------------------------------
+[query]
+enabled = true
+port    = 25565
+map     = "HA Network"
+show-plugins = false

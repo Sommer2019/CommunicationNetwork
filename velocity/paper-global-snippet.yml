@@ -1,0 +1,18 @@
+# =============================================================================
+# Velocity – Paper backend configuration snippet
+# =============================================================================
+# On every Paper/Purpur backend server, open:
+#   config/paper-global.yml
+# and set the following values so that the backend trusts the Velocity proxy.
+# =============================================================================
+
+proxies:
+  velocity:
+    enabled: true
+    online-mode: true
+    # Must match the value in velocity/forwarding.secret
+    secret: "CHANGE_ME_USE_A_STRONG_RANDOM_SECRET_HERE"
+
+# Additionally, in server.properties on every backend, set:
+#   online-mode=false
+# The proxy handles authentication; the backend must run in offline mode.
