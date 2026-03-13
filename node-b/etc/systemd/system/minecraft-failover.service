@@ -1,0 +1,17 @@
+[Unit]
+Description=Minecraft HA Failover Watchdog
+Documentation=https://github.com/Sommer2019/CommunicationNetwork
+After=network-online.target keepalived.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/minecraft/scripts/failover-watchdog.sh
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/minecraft-failover.log
+StandardError=append:/var/log/minecraft-failover.log
+User=root
+
+[Install]
+WantedBy=multi-user.target

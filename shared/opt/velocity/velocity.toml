@@ -1,0 +1,41 @@
+# =============================================================================
+# Velocity – velocity.toml
+# Values are substituted from config.env by deploy.sh
+# =============================================================================
+
+bind        = "0.0.0.0:@@PROXY_PORT@@"
+motd        = "<gradient:green:aqua>HA Minecraft Network</gradient>"
+show-max-players = 500
+player-info-forwarding-mode = "modern"
+online-mode = true
+compression-threshold = 256
+compression-level     = -1
+login-ratelimit       = 0
+connection-timeout    = 5000
+read-timeout          = 30000
+
+[servers]
+survival = "127.0.0.1:@@SURVIVAL_PORT@@"
+lobby    = "127.0.0.1:@@LOBBY_PORT@@"
+creative = "127.0.0.1:@@CREATIVE_PORT@@"
+
+# Fallback order: players kicked from a backend land on lobby instead of
+# getting disconnected – this is the seamless-failover mechanism.
+try = ["lobby", "survival"]
+
+[forced-hosts]
+"mc.example.com"    = ["survival"]
+"lobby.example.com" = ["lobby"]
+
+[advanced]
+proxy-protocol              = false
+connection-timeout          = 5000
+compression-threshold       = 256
+show-ping-as-zero-to-clients = false
+log-player-connections      = true
+
+[query]
+enabled     = true
+port        = @@PROXY_PORT@@
+map         = "HA Network"
+show-plugins = false
