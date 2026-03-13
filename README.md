@@ -1,8 +1,29 @@
 # CommunicationNetwork – Minecraft High Availability (HA) Setup
 
-A complete, production-ready High Availability configuration for a Minecraft network running on **two physically separate Linux dedicated servers** (Node A and Node B).
+> 🇩🇪 **Deutsche Anleitungen:**
+> - [📖 Gesamtanleitung](ANLEITUNG.md) – kompletter Schritt-für-Schritt-Aufbau
+> - [🖥️ Node A](node-a/ANLEITUNG.md) – Haupt-Server / MASTER
+> - [🖥️ Node B](node-b/ANLEITUNG.md) – Standby-Server / BACKUP
+> - [🔭 Witness](witness/ANLEITUNG.md) – Quorum-Schiedsrichter (Split-Brain-Schutz)
+
+A complete, production-ready High Availability configuration for a Minecraft network running on **two physically separate Linux dedicated servers** (Node A and Node B) with a lightweight **Quorum Witness** on a third machine.
 
 **Goal:** If Node A (hardware or software) fails completely, players are automatically reconnected to Node B within **≤ 5 seconds** – at the same position, with the same inventory, without manual reconnection.
+
+## Quick Start
+
+```bash
+# 1. Edit the ONE config file
+nano config.env
+
+# 2. Generate per-node deployment folders
+./deploy.sh
+
+# 3. Deploy to each machine and install
+rsync -av dist/node-a/  root@<NODE_A_IP>:/opt/deploy/ && ssh root@<NODE_A_IP>  "sudo /opt/deploy/install.sh"
+rsync -av dist/node-b/  root@<NODE_B_IP>:/opt/deploy/ && ssh root@<NODE_B_IP>  "sudo /opt/deploy/install.sh"
+rsync -av dist/witness/ root@<WITNESS_IP>:/opt/deploy/ && ssh root@<WITNESS_IP> "sudo /opt/deploy/install.sh"
+```
 
 ---
 

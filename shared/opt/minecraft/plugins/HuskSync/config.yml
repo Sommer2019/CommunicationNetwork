@@ -1,0 +1,75 @@
+# =============================================================================
+# HuskSync – config.yml  (deploy to every Paper backend)
+# Values are substituted from config.env by deploy.sh
+# Full docs: https://william278.net/docs/husksync/
+#
+# IMPORTANT: After deployment, edit the 'server.name' field in each backend's
+# copy of this file to match that backend's name, e.g.:
+#   /opt/minecraft/servers/survival/plugins/HuskSync/config.yml → "survival-1"
+#   /opt/minecraft/servers/lobby/plugins/HuskSync/config.yml    → "lobby-1"
+# All other settings are identical across backends.
+# =============================================================================
+
+# Unique name for this backend server instance
+server:
+  name: "survival-1"   # change per backend: lobby-1, creative-1, etc.
+
+# ── Database (MySQL/MariaDB – long-term persistent storage) ──────────────────
+database:
+  type: MYSQL
+  mysql:
+    host:     @@MYSQL_HOST@@
+    port:     @@MYSQL_PORT@@
+    database: @@MYSQL_DATABASE@@
+    username: @@MYSQL_USER@@
+    password: @@MYSQL_PASSWORD@@
+    connection_pool:
+      maximum_pool_size: 10
+      minimum_idle:       2
+      connection_timeout: 20000
+      keepalive_time:     0
+      max_lifetime:       1800000
+
+# ── Redis (real-time pub/sub channel for cross-server sync) ──────────────────
+# Scripts on both nodes source config.env at runtime, so Redis always points
+# to the current master (Sentinel promotes it automatically on failover).
+redis:
+  host:     127.0.0.1        # always local – Sentinel/keepalived moves the master here
+  port:     @@REDIS_PORT@@
+  password: "@@REDIS_PASSWORD@@"
+  use_ssl:  false
+  # Sentinel support (optional but recommended for extra resilience)
+  # sentinel:
+  #   master_name: minecraft-master
+  #   nodes:
+  #     - host: 127.0.0.1
+  #       port: 26379
+
+# ── What player data to synchronise ──────────────────────────────────────────
+sync:
+  inventory:                true   # Hotbar + main inventory
+  ender_chest:              true   # Ender chest contents
+  experience:               true   # XP levels and points
+  advancements:             true   # Achievement progress
+  statistics:               true   # /stats data
+  potion_effects:           true   # Active effects (speed, strength, …)
+  game_mode:                true   # Survival / Creative / Adventure
+  persistent_data_container: true  # Plugin-specific NBT data
+
+  # How long (seconds) to hold the per-player data lock during sync.
+  # MUST be shorter than the keepalived failover window (≈ 3–5 s).
+  # Prevents a second server from reading stale inventory after a failover.
+  lock_duration: 3
+
+  # Persist data immediately on these events (reduces data-loss window)
+  save_on_world_save: true
+  save_on_death:      true
+  save_on_quit:       true
+
+# ── Behaviour when a player's data cannot be fetched ─────────────────────────
+# "ORIGINAL" keeps whatever data the player logged in with (safer for HA)
+fallback_snapshot_to_keep: "ORIGINAL"
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+debug_logging: false
+log_to_file:   true

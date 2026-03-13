@@ -1,0 +1,16 @@
+[Unit]
+Description=Minecraft HA Quorum Witness
+Documentation=https://github.com/Sommer2019/CommunicationNetwork
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/witness/witness-server.sh
+Restart=always
+RestartSec=3
+StandardOutput=append:/var/log/minecraft-witness.log
+StandardError=append:/var/log/minecraft-witness.log
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,25 @@
+[Unit]
+Description=Velocity Minecraft Proxy
+Documentation=https://velocitypowered.com
+After=network-online.target redis.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=minecraft
+Group=minecraft
+WorkingDirectory=/opt/velocity
+ExecStart=/usr/bin/java -Xms512M -Xmx1G \
+    -XX:+UseG1GC -XX:G1HeapRegionSize=4M \
+    -XX:+UnlockExperimentalVMOptions \
+    -XX:+ParallelRefProcEnabled \
+    -XX:+AlwaysPreTouch \
+    -jar /opt/velocity/velocity.jar
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Do NOT auto-start on boot; keepalived on_master.sh starts it
+[Install]
+# WantedBy intentionally omitted – managed by keepalived
