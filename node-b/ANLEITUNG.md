@@ -9,7 +9,15 @@ Node B läuft im **Hot-Standby**: Redis repliziert in Echtzeit, GlusterFS ist ei
 ```bash
 apt update && apt install -y keepalived redis-server glusterfs-server curl openjdk-21-jdk-headless openjdk-21-jre rsync ssh
 ```
-
+Öffne die SSH-Konfigurationsdatei mit einem Editor (z.B. nano):
+sudo nano /etc/ssh/sshd_config
+Suche die Zeile #PermitRootLogin prohibit-password oder PermitRootLogin prohibit-password.
+Ändere diese Zeile um in:
+PermitRootLogin yes
+(Achte darauf, das # am Anfang zu entfernen!)
+Speichere mit Strg + O, Enter und schließe mit Strg + X.
+Starte den SSH-Dienst neu, damit die Änderung aktiv wird:
+sudo systemctl restart ssh
 ---
 
 ## Schritt 1 – Dateien deployen
