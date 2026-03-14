@@ -7,7 +7,7 @@ Node B läuft im **Hot-Standby**: Redis repliziert in Echtzeit, GlusterFS ist ei
 ## Voraussetzungen
 
 ```bash
-apt update && apt install -y keepalived redis-server glusterfs-server curl openjdk-21-jdk-headless openjdk-21-jre rsync
+apt update && apt install -y keepalived redis-server glusterfs-server curl openjdk-21-jdk-headless openjdk-21-jre rsync ssh
 ```
 
 ---
